@@ -4,7 +4,7 @@ class Money
 
   NULL_CURRENCY = NullCurrency.new.freeze
 
-  attr_reader :value, :subunits, :currency
+  attr_reader :value, :currency
   def_delegators :@value, :zero?, :nonzero?, :positive?, :negative?, :to_i, :to_f, :hash
 
   class << self
@@ -87,7 +87,6 @@ class Money
     raise ArgumentError if value.respond_to?(:nan?) && value.nan?
     @currency = Helpers.value_to_currency(currency)
     @value = Helpers.value_to_decimal(value).round(@currency.minor_units)
-    @subunits = (@value * @currency.subunit_to_unit).to_i
     freeze
   end
 
@@ -103,6 +102,10 @@ class Money
   def cents
     # Money.deprecate('`money.cents` is deprecated and will be removed in the next major release. Please use `money.subunits` instead. Keep in mind, subunits are currency aware.')
     (value * 100).to_i
+  end
+
+  def subunits
+    (@value * @currency.subunit_to_unit).to_i
   end
 
   def no_currency?
@@ -322,6 +325,7 @@ class Money
   #   Money.new(100, "USD").split(3) #=> [Money.new(34), Money.new(33), Money.new(33)]
   def split(num)
     raise ArgumentError, "need at least one party" if num < 1
+    subunits = self.subunits
     low = Money.from_subunits(subunits / num, currency)
     high = Money.from_subunits(low.subunits + 1, currency)
 
