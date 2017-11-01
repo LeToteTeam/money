@@ -8,34 +8,53 @@ class MoneyParser
   end
 
   def parse(input, currency = nil)
-    Money.new(extract_money(input.to_s, currency), currency)
+    amount = extract_money(input.to_s, currency)
+    Money.new(amount, currency)
   end
 
   private
 
-  def extract_money(input, currency = nil)
-    return '0' if input.to_s.empty?
+  def extract_money(input, currency)
+    return '0' if input.empty?
 
     amount = input.scan(/(-?[\d#{MARKS}][\d#{MARKS}#{EXTRA_MARKS}]*)/).first
     return '0' unless amount
     amount = amount.first.tr(EXTRA_MARKS, '')
 
     *other_marks, last_mark = amount.scan(/[#{MARKS}]/)
-    other_marks.uniq!
-
-    return amount if last_mark.nil?
+    return amount unless last_mark
 
     *dollars, cents = amount.split(last_mark)
     dollars = dollars.join.tr(MARKS, '')
 
-    if cents.size > 2
-      c = Money::Helpers.value_to_currency(currency)
+    if last_digits_decimals?(dollars, cents, last_mark, other_marks, currency)
+      "#{dollars}.#{cents}"
+    else
+      "#{dollars}#{cents}"
+    end
+  end
 
-      if (!dollars.to_i.zero? && c.decimal_mark != last_mark) || other_marks == [last_mark]
-        return "#{dollars}#{cents}"
-      end
+  def last_digits_decimals?(first_digits, last_digits, last_mark, other_marks, currency)
+    # Thousands marks are always different from decimal marks
+    # Example: 1,234,456
+    other_marks.uniq!
+    if other_marks.size == 1
+      return other_marks.first != last_mark
     end
 
-    "#{dollars}.#{cents}"
+    # Thousands always have more than 2 digits
+    # Example: 1,23 must be 1 dollar and 23 cents
+    if last_digits.size < 3
+      return true
+    end
+
+    # 0 before the final mark indicates last digits are decimals
+    # Example: 0,23
+    if first_digits.to_i.zero?
+      return true
+    end
+
+    # The last mark matches the one used by the provided currency to delimiter decimals
+    return Money::Helpers.value_to_currency(currency).decimal_mark == last_mark
   end
 end

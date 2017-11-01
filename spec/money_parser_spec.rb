@@ -152,8 +152,8 @@ RSpec.describe MoneyParser do
       expect(@parser.parse("1.000", 'EUR')).to eq(Money.new(1_000, 'EUR'))
     end
 
-    it "parses a three digit currency with no decimals" do
-      expect(@parser.parse("10.000", 'JOD')).to eq(Money.new(10, 'JOD'))
+    it "parses a three digit currency" do
+      expect(@parser.parse("1.000", 'JOD')).to eq(Money.new(1, 'JOD'))
     end
 
     it "parses amount with 3 decimals and 0 dollar amount" do
